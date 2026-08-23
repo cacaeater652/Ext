@@ -1,0 +1,30 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local HITBOX_SIZE = Vector3.new(12, 12, 12)
+
+local function enlargeHitbox(character)
+	local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+
+	if humanoidRootPart then
+		humanoidRootPart.Size = HITBOX_SIZE
+		humanoidRootPart.Transparency = 0.7
+		humanoidRootPart.CanCollide = false
+	end
+end
+
+local function setupPlayer(player)
+	if player == LocalPlayer then return end
+
+	if player.Character then
+		enlargeHitbox(player.Character)
+	end
+
+	player.CharacterAdded:Connect(enlargeHitbox)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+	setupPlayer(player)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
