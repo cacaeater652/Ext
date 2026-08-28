@@ -1,30 +1,132 @@
 local Players = game:GetService("Players")
+
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local HITBOX_SIZE = Vector3.new(12, 12, 12)
+local hitboxSize = 8
 
-local function enlargeHitbox(character)
-	local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+--------------------------------------------------
+-- GUI
+--------------------------------------------------
 
-	if humanoidRootPart then
-		humanoidRootPart.Size = HITBOX_SIZE
-		humanoidRootPart.Transparency = 0.7
-		humanoidRootPart.CanCollide = false
+local gui = Instance.new("ScreenGui")
+gui.Name = "HitboxGUI"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 230, 0, 130)
+frame.Position = UDim2.new(0.5, -115, 0.5, -65)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundTransparency = 1
+title.Text = "Hitbox Size"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+local input = Instance.new("TextBox")
+input.Size = UDim2.new(0, 190, 0, 40)
+input.Position = UDim2.new(0.5, -95, 0, 45)
+input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+input.TextColor3 = Color3.new(1, 1, 1)
+input.PlaceholderText = "Enter size..."
+input.Text = tostring(hitboxSize)
+input.TextSize = 18
+input.Font = Enum.Font.Gotham
+input.ClearTextOnFocus = false
+input.Parent = frame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 8)
+inputCorner.Parent = input
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Position = UDim2.new(0, 0, 0, 92)
+status.BackgroundTransparency = 1
+status.Text = "Current: " .. hitboxSize
+status.TextColor3 = Color3.fromRGB(180, 180, 180)
+status.TextSize = 14
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
+--------------------------------------------------
+-- HITBOX
+--------------------------------------------------
+
+local function updateHitbox(character)
+	if not character then return end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+
+	if root then
+		root.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+
+		-- Completely invisible
+		root.Transparency = 1
+
+		-- Doesn't interfere with movement
+		root.CanCollide = false
+		root.CanTouch = true
+		root.CanQuery = true
 	end
 end
 
 local function setupPlayer(player)
-	if player == LocalPlayer then return end
-
-	if player.Character then
-		enlargeHitbox(player.Character)
+	if player == LocalPlayer then
+		return
 	end
 
-	player.CharacterAdded:Connect(enlargeHitbox)
+	if player.Character then
+		updateHitbox(player.Character)
+	end
+
+	player.CharacterAdded:Connect(function(character)
+		task.wait(0.2)
+		updateHitbox(character)
+	end)
 end
+
+--------------------------------------------------
+-- APPLY TO PLAYERS
+--------------------------------------------------
 
 for _, player in ipairs(Players:GetPlayers()) do
 	setupPlayer(player)
 end
 
 Players.PlayerAdded:Connect(setupPlayer)
+
+--------------------------------------------------
+-- CHANGE SIZE
+--------------------------------------------------
+
+input.FocusLost:Connect(function()
+	local number = tonumber(input.Text)
+
+	if number then
+		number = math.clamp(number, 1, 100)
+		hitboxSize = number
+
+		input.Text = tostring(hitboxSize)
+		status.Text = "Current: " .. hitboxSize
+
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer and player.Character then
+				updateHitbox(player.Character)
+			end
+		end
+	else
+		input.Text = tostring(hitboxSize)
+	end
+end)
